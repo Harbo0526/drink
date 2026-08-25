@@ -242,7 +242,7 @@
         <p class="hint" style="margin-top:0;">把数据存到你自己的 Gitee（码云）仓库，国内手机直连、多设备自动同步。需一个带 <b>projects</b> 权限的私人令牌（仅存你浏览器本地，不上传给我）。</p>
         <div class="field"><label>私人令牌 Token</label><input id="ghToken" type="password" placeholder="gitee 私人令牌" style="font-size:14px;"></div>
         <div class="row2">
-          <div class="field"><label>仓库 owner/repo</label><input id="ghRepo" placeholder="你的Gitee用户名/仓库名"></div>
+          <div class="field"><label>仓库 owner/repo</label><input id="ghRepo" value="harboh/cocktail" placeholder="你的Gitee用户名/仓库名"></div>
           <div class="field"><label>分支</label><input id="ghBranch" value="master"></div>
         </div>
         <div class="field"><label>文件路径</label><input id="ghPath" value="cocktail-data.json"></div>
@@ -610,6 +610,7 @@
       if(!repoRes.ok){toast("仓库检查失败:"+repoRes.status);return;}
       var repo=await repoRes.json();
       var def=repo.default_branch||"master";
+      if(!repo.default_branch){toast("⚠️ 仓库存在但还没有分支：请到 gitee.com 打开该仓库，点「初始化 README」或新建一个文件，生成 "+def+" 分支后再同步");return;}
       if(c.branch!==def){toast("仓库默认分支是 "+def+"，你填的是 "+c.branch+"（可忽略，已兼容）");}
       toast("✅ 连接正常："+me.login+" / "+repo.full_name+" / 分支 "+def);
     }catch(e){toast("网络异常，测试失败");}
