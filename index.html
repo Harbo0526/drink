@@ -251,6 +251,7 @@
           <button class="btn btn-accent" id="ghPush">立即同步</button>
         </div>
         <div class="backup-actions" style="margin-top:10px;">
+          <button class="btn btn-ghost btn-sm" id="ghTest">连接测试</button>
           <button class="btn btn-ghost btn-sm" id="ghPull">拉取远端</button>
           <button class="btn btn-ghost btn-sm" id="ghNew">新建仓库</button>
         </div>
@@ -578,17 +579,40 @@
   var ghTimer;
   function scheduleGhPush(){clearTimeout(ghTimer);ghTimer=setTimeout(function(){ghPush();},800);}
   async function ghPush(){
-    var c=ghCfg();if(!c.token||!c.repo)return;
+    var c=ghCfg();if(!c.token||!c.repo){toast("先配置 Gitee 同步");return;}
     var body=JSON.stringify({materials:materials,recipes:recipes});
     var b64=b64e(body),sha=null;
     try{var r=await fetch(ghUrl(c),{headers:ghHdr(c)});if(r.ok){var j=await r.json();sha=j.sha;}else if(r.status!==404){toast("读取远端失败:"+r.status);return;}}catch(e){}
     var put={message:"cocktail sync "+new Date().toISOString(),content:b64,branch:c.branch};
     if(sha)put.sha=sha;
+    var method=sha?"PUT":"POST";
     try{
-      var res=await fetch(ghUrl(c),{method:"POST",headers:ghHdr(c),body:JSON.stringify(put)});
-      if(res.ok){toast("已同步到 Gitee");updateGhStatus();}
-      else{var e=await res.json().catch(function(){return{};});toast("同步失败:"+(e.message||res.status));}
+      var res=await fetch(ghUrl(c),{method:method,headers:ghHdr(c),body:JSON.stringify(put)});
+      if(res.ok){toast(sha?"已更新到 Gitee":"已同步到 Gitee");updateGhStatus();}
+      else{
+        var e=await res.json().catch(function(){return{};});
+        if(res.status===404)toast("404：仓库或分支不存在，点「连接测试」排查");
+        else if(res.status===401)toast("401：令牌无效或无 projects 权限");
+        else if(res.status===400)toast("400："+(e.message||"分支不存在或参数错误"));
+        else toast("同步失败:"+(e.message||res.status));
+      }
     }catch(e){toast("网络异常，稍后重试");}
+  }
+  async function ghTest(){
+    var c=ghCfg();if(!c.token||!c.repo){toast("先填 Token 和仓库");return;}
+    toast("正在测试连接…");
+    try{
+      var u=await fetch("https://gitee.com/api/v5/user?access_token="+encodeURIComponent(c.token),{headers:ghHdr(c)});
+      if(!u.ok){toast("令牌无效(401)，请检查 Token");return;}
+      var me=await u.json();
+      var repoRes=await fetch("https://gitee.com/api/v5/repos/"+encodeURIComponent(c.repo)+"?access_token="+encodeURIComponent(c.token),{headers:ghHdr(c)});
+      if(repoRes.status===404){toast("仓库不存在：请确认 '"+c.repo+"' 已创建");return;}
+      if(!repoRes.ok){toast("仓库检查失败:"+repoRes.status);return;}
+      var repo=await repoRes.json();
+      var def=repo.default_branch||"master";
+      if(c.branch!==def){toast("仓库默认分支是 "+def+"，你填的是 "+c.branch+"（可忽略，已兼容）");}
+      toast("✅ 连接正常："+me.login+" / "+repo.full_name+" / 分支 "+def);
+    }catch(e){toast("网络异常，测试失败");}
   }
   async function ghPull(){
     var c=ghCfg();if(!c.token||!c.repo){toast("先配置 Gitee 同步");return;}
@@ -608,6 +632,7 @@
     ghSetCfg(c);toast("设置已保存，正在拉取…");ghPull();
   };
   $("ghPush").onclick=function(){ghPush();};
+  $("ghTest").onclick=function(){ghTest();};
   $("ghPull").onclick=function(){ghPull();};
   $("ghDisconnect").onclick=function(){if(confirm("断开 Gitee 同步？本地数据保留。")){localStorage.removeItem(GH_K);fillGhForm();updateGhStatus();toast("已断开");}};
   $("ghNew").onclick=async function(){
