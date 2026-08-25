@@ -562,6 +562,7 @@
 
   // ---- gitee sync ----
   var GH_K=PREFIX+"gh";
+  (function(){try{var _t=(JSON.parse(localStorage.getItem(GH_K)||"{}")).token;if(_t&&/^ghp_|^github_pat_/.test(_t)){localStorage.removeItem(GH_K);}}catch(e){}})();
   function ghCfg(){try{return JSON.parse(localStorage.getItem(GH_K))||{};}catch(e){return {};}}
   function ghSetCfg(c){localStorage.setItem(GH_K,JSON.stringify(c));updateGhStatus();}
   function ghHdr(c){return {"Content-Type":"application/json"};}
