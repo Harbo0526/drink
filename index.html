@@ -255,6 +255,7 @@
           <button class="btn btn-ghost btn-sm" id="ghPull">拉取远端</button>
           <button class="btn btn-ghost btn-sm" id="ghNew">新建仓库</button>
         </div>
+        <pre id="ghDiag" style="display:none;background:#f8f9fb;border:1px solid #e5e7eb;border-radius:8px;padding:10px;margin-top:10px;font-size:12px;white-space:pre-wrap;word-break:break-all;color:#333;"></pre>
         <button class="btn btn-danger btn-block btn-sm" id="ghDisconnect" style="margin-top:10px;">断开同步</button>
       </div>
       <div class="card">
@@ -575,7 +576,15 @@
     if(c&&c.token&&c.repo){el.innerHTML='<span class="save-dot" style="background:#34D399;box-shadow:0 0 6px #34D399;"></span>已连接';el.style.color="#0F9D58";el.style.background="#E7F7EE";}
     else{el.innerHTML='<span class="save-dot" style="background:#bbb;"></span>未配置';el.style.color="#888";el.style.background="#eee";}
   }
-  function fillGhForm(){var c=ghCfg();if(c.token)$("ghToken").value=c.token;$("ghRepo").value="harboh/cocktail";if(c.branch)$("ghBranch").value=c.branch;else $("ghBranch").value="master";if(c.path)$("ghPath").value=c.path;else $("ghPath").value="cocktail-data.json";if(c.token)ghSetCfg({token:c.token,repo:"harboh/cocktail",branch:(c.branch)||"master",path:(c.path)||"cocktail-data.json"});}
+  function fillGhForm(){
+    var c=ghCfg();
+    $("ghRepo").value="harboh/cocktail";$("ghBranch").value=c.branch||"master";$("ghPath").value=c.path||"cocktail-data.json";
+    if(c.token){
+      if(/^ghp_|^github_pat_/i.test(c.token)){
+        localStorage.removeItem(GH_K);$("ghToken").value="";toast("检测到旧 GitHub 令牌，已清空，请重新填 Gitee 私人令牌");
+      }else{$("ghToken").value=c.token;ghSetCfg({token:c.token,repo:"harboh/cocktail",branch:(c.branch)||"master",path:(c.path)||"cocktail-data.json"});}
+    }
+  }
   var ghTimer;
   function scheduleGhPush(){clearTimeout(ghTimer);ghTimer=setTimeout(function(){ghPush();},800);}
   async function ghPush(){
@@ -600,20 +609,42 @@
   }
   async function ghTest(){
     var c=ghCfg();if(!c.token||!c.repo){toast("先填 Token 和仓库");return;}
+    if(/^ghp_|^github_pat_/i.test(c.token)){toast("这是 GitHub 令牌，Gitee 不认识，请换成 Gitee 私人令牌");return;}
+    var diag=$("ghDiag"),logs=[];diag.style.display="block";diag.textContent="正在测试…";
+    function log(s){logs.push(s);diag.textContent=logs.join("\n");}
     toast("正在测试连接…");
     try{
       var u=await fetch("https://gitee.com/api/v5/user?access_token="+encodeURIComponent(c.token),{headers:ghHdr(c)});
-      if(!u.ok){toast("令牌无效(401)，请检查 Token");return;}
-      var me=await u.json();
-      var repoRes=await fetch("https://gitee.com/api/v5/repos/"+encodeURIComponent(c.repo)+"?access_token="+encodeURIComponent(c.token),{headers:ghHdr(c)});
-      if(repoRes.status===404){toast("仓库不存在：请确认 '"+c.repo+"' 已创建");return;}
-      if(!repoRes.ok){toast("仓库检查失败:"+repoRes.status);return;}
-      var repo=await repoRes.json();
+      var uText=await u.text();log("1) /user 状态码: "+u.status+" 长度: "+uText.length);
+      if(!u.ok){log("   响应: "+uText.slice(0,120));log("结论：令牌无效。请去 gitee.com → 设置 → 私人令牌，重新生成并勾选 projects 权限。");toast("令牌无效("+u.status+")");return;}
+      var me=JSON.parse(uText);log("   当前登录用户: "+me.login+" (id="+me.id+")");
+
+      var repoUrl="https://gitee.com/api/v5/repos/"+encodeURIComponent(c.repo)+"?access_token="+encodeURIComponent(c.token);
+      log("2) 请求仓库: "+repoUrl.replace(c.token,"***"));
+      var repoRes=await fetch(repoUrl,{headers:ghHdr(c)});
+      var rText=await repoRes.text();log("   /repos 状态码: "+repoRes.status+" 长度: "+rText.length);
+      if(!repoRes.ok){log("   响应: "+rText.slice(0,200));}
+      if(repoRes.status===404){
+        log("结论：仓库 '"+c.repo+"' 不存在或 Token 无权限访问。");
+        log("自查：① 到 gitee.com 确认仓库存在且用户名/仓库名完全匹配（区分大小写）。");
+        log("自查：② 确认 Token 有 projects 权限；可尝试公开此仓库再测。");
+        log("自查：③ 把下面链接复制到手机浏览器地址栏直接打开，看能否返回 JSON：");
+        log(repoUrl.replace(c.token,"YOUR_TOKEN"));
+        toast("仓库不存在("+repoRes.status+")");return;
+      }
+      if(!repoRes.ok){toast("仓库检查失败:"+repoRes.status);log("结论：仓库检查失败，请按上面响应排查。");return;}
+      var repo=JSON.parse(rText);
       var def=repo.default_branch||"master";
-      if(!repo.default_branch){toast("⚠️ 仓库存在但还没有分支：请到 gitee.com 打开该仓库，点「初始化 README」或新建一个文件，生成 "+def+" 分支后再同步");return;}
-      if(c.branch!==def){toast("仓库默认分支是 "+def+"，你填的是 "+c.branch+"（可忽略，已兼容）");}
+      log("   仓库: "+repo.full_name+" (human_name="+repo.human_name+")");
+      log("   默认分支: "+(repo.default_branch||"(空，未初始化)")+" 可见性: "+(repo.visibility||"?"));
+      if(!repo.default_branch){
+        log("结论：仓库存在但还没有分支。请到 gitee.com 打开该仓库，点「初始化 README」生成 "+def+" 分支。");
+        toast("仓库未初始化");return;
+      }
+      if(c.branch!==def){log("提示：仓库默认分支是 "+def+"，你填的是 "+c.branch+"（可忽略，已兼容）");}
+      log("结论：✅ 连接正常。"+me.login+" / "+repo.full_name+" / 分支 "+def);
       toast("✅ 连接正常："+me.login+" / "+repo.full_name+" / 分支 "+def);
-    }catch(e){toast("网络异常，测试失败");}
+    }catch(e){log("网络异常："+e.message);toast("网络异常，测试失败");}
   }
   async function ghPull(){
     var c=ghCfg();if(!c.token||!c.repo){toast("先配置 Gitee 同步");return;}
