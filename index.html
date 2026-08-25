@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>调酒计算器</title>
+<style>
+  :root{
+    --bg:#FFF7F2;
+    --card:#FFFFFF;
+    --primary:#FF6B6B;
+    --primary-2:#FF8E53;
+    --accent:#2DD4BF;
+    --text:#2B2B2B;
+    --muted:#8A8A8A;
+    --line:#F0E6DF;
+    --red:#E5484D;
+    --green:#16A34A;
+    --shadow:0 4px 16px rgba(255,107,107,.10);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--text);
+    font-size:15px;line-height:1.5;
+    -webkit-text-size-adjust:100%;
+  }
+  .app{max-width:520px;margin:0 auto;min-height:100vh;background:var(--bg);padding-bottom:84px;}
+  header.top{
+    position:sticky;top:0;z-index:20;
+    background:linear-gradient(135deg,var(--primary),var(--primary-2));
+    color:#fff;padding:16px 18px 14px;
+    padding-top:calc(16px + env(safe-area-inset-top));
+    box-shadow:0 2px 10px rgba(255,107,107,.25);
+  }
+  .top-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:18px;}
+  .brand svg{width:24px;height:24px;}
+  .save-tag{display:flex;align-items:center;gap:5px;font-size:12px;opacity:.95;
+    background:rgba(255,255,255,.18);padding:4px 9px;border-radius:20px;}
+  .save-dot{width:7px;height:7px;border-radius:50%;background:#B9F6CA;box-shadow:0 0 6px #B9F6CA;}
+  .section{padding:14px 16px;}
+  .sec-title{display:flex;align-items:center;justify-content:space-between;margin:4px 2px 10px;}
+  .sec-title h2{font-size:15px;margin:0;font-weight:700;display:flex;align-items:center;gap:7px;}
+  .sec-title svg{width:17px;height:17px;color:var(--primary);}
+  .card{background:var(--card);border-radius:16px;padding:14px;box-shadow:var(--shadow);margin-bottom:12px;border:1px solid var(--line);}
+  .card.plain{box-shadow:none;background:#FFF;}
+  /* quick start */
+  .quick-chips{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 4px;}
+  .chip{flex:0 0 auto;background:#fff;border:1px solid var(--line);border-radius:20px;
+    padding:7px 13px;font-size:13px;color:var(--text);display:flex;align-items:center;gap:6px;white-space:nowrap;}
+  .chip svg{width:14px;height:14px;color:var(--primary);}
+  .hint{color:var(--muted);font-size:13px;padding:6px 2px;}
+  /* result */
+  .result{background:linear-gradient(135deg,#FFF1EC,#FFE9F2);border-radius:18px;padding:18px;margin-bottom:12px;border:1px solid var(--line);}
+  .result-grid{display:flex;gap:10px;}
+  .res-cell{flex:1;background:#fff;border-radius:14px;padding:13px 10px;text-align:center;box-shadow:var(--shadow);}
+  .res-cell .v{font-size:22px;font-weight:800;line-height:1.1;}
+  .res-cell .v small{font-size:12px;font-weight:600;color:var(--muted);}
+  .res-cell .k{font-size:12px;color:var(--muted);margin-top:4px;}
+  .res-pr .v{color:var(--primary);}
+  .res-abv .v{color:#7C3AED;}
+  .res-vol .v{color:var(--accent);}
+  .warn{margin-top:10px;font-size:12.5px;color:#B45309;background:#FEF3C7;border-radius:10px;padding:8px 11px;display:none;}
+  .warn.show{display:block;}
+  /* form */
+  .field{margin-bottom:11px;}
+  .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px;font-weight:600;}
+  .field input,.field select{width:100%;padding:11px 12px;font-size:16px;border:1.5px solid var(--line);
+    border-radius:11px;background:#FAFBFC;color:var(--text);outline:none;font-family:inherit;}
+  .field input:focus,.field select:focus{border-color:var(--primary);background:#fff;}
+  .row2{display:flex;gap:10px;}
+  .row2 .field{flex:1;}
+  /* buttons */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    border:none;border-radius:12px;padding:12px 16px;font-size:15px;font-weight:700;
+    font-family:inherit;cursor:pointer;min-height:44px;}
+  .btn svg{width:17px;height:17px;}
+  .btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff;box-shadow:var(--shadow);}
+  .btn-ghost{background:#fff;color:var(--primary);border:1.5px solid var(--primary);}
+  .btn-accent{background:var(--accent);color:#fff;}
+  .btn-block{width:100%;}
+  .btn-sm{padding:8px 12px;font-size:13px;min-height:38px;border-radius:10px;}
+  .btn-danger{background:#fff;color:var(--red);border:1.5px solid #F3C2C2;}
+  /* material rows */
+  .mat-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);}
+  .mat-row:last-child{border-bottom:none;}
+  .mat-ic{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .mat-ic svg{width:20px;height:20px;}
+  .cat-基酒{background:#FDE8E8;color:#E5484D;}
+  .cat-辅料{background:#E0F7F4;color:#0D9488;}
+  .cat-其他{background:#EEF0F5;color:#5B6472;}
+  .mat-info{flex:1;min-width:0;}
+  .mat-info .nm{font-weight:700;font-size:14.5px;}
+  .mat-info .sub{font-size:12px;color:var(--muted);}
+  .mat-info .sub b{color:var(--text);font-weight:600;}
+  .icon-btn{background:none;border:none;padding:8px;cursor:pointer;color:var(--muted);min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center;}
+  .icon-btn svg{width:18px;height:18px;}
+  .icon-btn.del{color:var(--red);}
+  /* mix */
+  .mix-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);}
+  .mix-row:last-child{border-bottom:none;}
+  .mix-name{flex:1;min-width:0;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mix-name small{display:block;font-size:11px;color:var(--muted);font-weight:400;}
+  .mix-vol{display:flex;align-items:center;gap:4px;}
+  .mix-vol input{width:62px;padding:9px 7px;font-size:16px;text-align:right;border:1.5px solid var(--line);border-radius:9px;background:#FAFBFC;outline:none;}
+  .mix-vol input:focus{border-color:var(--primary);}
+  .mix-vol .u{font-size:12px;color:var(--muted);}
+  .mix-cost{width:64px;text-align:right;font-size:13px;font-weight:700;color:var(--primary);}
+  .empty{text-align:center;color:var(--muted);padding:26px 10px;font-size:13.5px;}
+  .empty svg{width:40px;height:40px;color:#E2D6CF;margin-bottom:8px;}
+  .scale-box{display:flex;gap:8px;align-items:flex-end;margin-top:4px;}
+  .scale-box .field{flex:1;margin-bottom:0;}
+  /* bottom nav */
+  nav.bottom{position:fixed;left:0;right:0;bottom:0;z-index:30;
+    background:#fff;border-top:1px solid var(--line);
+    display:flex;max-width:520px;margin:0 auto;
+    padding-bottom:env(safe-area-inset-bottom);}
+  nav.bottom button{flex:1;background:none;border:none;padding:9px 4px 7px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-size:11px;font-family:inherit;}
+  nav.bottom button svg{width:22px;height:22px;}
+  nav.bottom button.active{color:var(--primary);font-weight:700;}
+  .tab{display:none;}
+  .tab.active{display:block;}
+  /* modal */
+  .mask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50;display:none;align-items:center;justify-content:center;padding:22px;}
+  .mask.show{display:flex;}
+  .modal{background:#fff;border-radius:18px;padding:18px;width:100%;max-width:420px;max-height:86vh;overflow:auto;}
+  .modal h3{margin:0 0 14px;font-size:17px;}
+  .modal-actions{display:flex;gap:10px;margin-top:14px;}
+  .modal-actions .btn{flex:1;}
+  .toast{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:rgba(43,43,43,.92);color:#fff;
+    padding:10px 18px;border-radius:22px;font-size:14px;z-index:60;opacity:0;transition:opacity .25s;pointer-events:none;}
+  .toast.show{opacity:1;}
+  .backup-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;}
+  .seg{display:flex;background:#F2ECE7;border-radius:11px;padding:3px;gap:3px;margin-bottom:12px;}
+  .seg button{flex:1;border:none;background:none;padding:9px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--muted);font-family:inherit;cursor:pointer;min-height:42px;}
+  .seg button.active{background:#fff;color:var(--primary);box-shadow:var(--shadow);}
+  .recipe-card{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);}
+  .recipe-card:last-child{border-bottom:none;}
+  .recipe-info{flex:1;min-width:0;}
+  .recipe-info .nm{font-weight:700;font-size:14.5px;}
+  .recipe-info .sub{font-size:12px;color:var(--muted);}
+  .recipe-info .sub b{color:var(--primary);}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="top-row">
+      <div class="brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14l-7 8z"/><path d="M12 12v6"/><path d="M8 21h8"/></svg>
+        调酒计算器
+      </div>
+      <div class="save-tag"><span class="save-dot"></span>本地已保存</div>
+    </div>
+  </header>
+
+  <!-- 调酒 -->
+  <section class="tab active" id="tab-mix">
+    <div class="section">
+      <div class="sec-title"><h2>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg>
+        快速开始</h2></div>
+      <div class="quick-chips" id="quickChips"></div>
+    </div>
+
+    <div class="section">
+      <div class="result">
+        <div class="result-grid">
+          <div class="res-cell res-pr"><div class="v" id="rPrice">¥0.00</div><div class="k">这杯总价</div></div>
+          <div class="res-cell res-abv"><div class="v" id="rAbv">0.0<small>%</small></div><div class="k">酒精度</div></div>
+          <div class="res-cell res-vol"><div class="v" id="rVol">0<small>ml</small></div><div class="k">总体积</div></div>
+        </div>
+        <div class="warn" id="rWarn">⚠️ 此饮酒精度较高，请适量饮用</div>
+      </div>
+
+      <div class="card">
+        <div class="sec-title"><h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          配方材料</h2>
+          <button class="btn btn-ghost btn-sm" id="addMixBtn">+ 添加材料</button>
+        </div>
+        <div id="mixList"></div>
+        <div class="empty" id="mixEmpty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 4h14l-7 8z"/><path d="M12 12v6"/><path d="M8 21h8"/></svg>
+          <div>还没选材料，点右上角「添加材料」开始调制</div>
+        </div>
+
+        <div class="scale-box" style="margin-top:12px;">
+          <div class="field" style="margin-bottom:0;">
+            <label>目标总体积 (ml)</label>
+            <input type="number" id="targetVol" placeholder="如 105" min="0" step="1">
+          </div>
+          <button class="btn btn-accent btn-sm" id="scaleBtn" style="min-height:44px;">按比例缩放</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-ghost btn-block" id="clearMixBtn">清空</button>
+        <button class="btn btn-primary btn-block" id="saveRecipeBtn">保存为配方</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 材料库 -->
+  <section class="tab" id="tab-mat">
+    <div class="section">
+      <div class="sec-title"><h2>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
+        材料库</h2>
+        <button class="btn btn-ghost btn-sm" id="addMatBtn">+ 新增</button>
+      </div>
+      <div class="card plain" id="matList"></div>
+      <button class="btn btn-danger btn-block btn-sm" id="clearSeedBtn">清空示例数据</button>
+    </div>
+  </section>
+
+  <!-- 配方 -->
+  <section class="tab" id="tab-rec">
+    <div class="section">
+      <div class="sec-title"><h2>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        我的配方</h2></div>
+      <div class="card plain" id="recList"></div>
+    </div>
+  </section>
+
+  <!-- 备份 -->
+  <section class="tab" id="tab-bak">
+    <div class="section">
+      <div class="sec-title"><h2>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M12 7v5l3 2"/></svg>
+        数据备份</h2></div>
+      <div class="card">
+        <div class="sec-title" style="margin-top:0;"><h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 2 2 6.5 2 12c0 4.4 2.9 8.2 6.8 9.5.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5C19.1 20.2 22 16.4 22 12c0-5.5-4.5-10-10-10z"/></svg>
+          GitHub 云同步</h2>
+          <span class="save-tag" id="ghStatus" style="background:#eee;color:#888;"><span class="save-dot" style="background:#bbb;"></span>未配置</span>
+        </div>
+        <p class="hint" style="margin-top:0;">把数据存到你自己的 GitHub 仓库，手机/电脑多设备自动同步。需一个带 <b>repo</b> 权限的私人令牌（仅存你浏览器本地，不上传给我）。</p>
+        <div class="field"><label>私人令牌 Token</label><input id="ghToken" type="password" placeholder="ghp_xxx 或 github_pat_xxx" style="font-size:14px;"></div>
+        <div class="row2">
+          <div class="field"><label>仓库 owner/repo</label><input id="ghRepo" placeholder="HarboH/cocktail-data"></div>
+          <div class="field"><label>分支</label><input id="ghBranch" value="main"></div>
+        </div>
+        <div class="field"><label>文件路径</label><input id="ghPath" value="cocktail-data.json"></div>
+        <div class="backup-actions">
+          <button class="btn btn-ghost" id="ghSave">保存设置</button>
+          <button class="btn btn-accent" id="ghPush">立即同步</button>
+        </div>
+        <div class="backup-actions" style="margin-top:10px;">
+          <button class="btn btn-ghost btn-sm" id="ghPull">拉取远端</button>
+          <button class="btn btn-ghost btn-sm" id="ghNew">新建仓库</button>
+        </div>
+        <button class="btn btn-danger btn-block btn-sm" id="ghDisconnect" style="margin-top:10px;">断开同步</button>
+      </div>
+      <div class="card">
+        <p class="hint" style="margin-top:0;">数据保存在本机浏览器，换设备或清缓存会丢失，建议定期导出备份。</p>
+        <div class="backup-actions">
+          <button class="btn btn-ghost" id="exportBtn">导出 JSON</button>
+          <button class="btn btn-ghost" id="importBtn">导入恢复</button>
+        </div>
+        <input type="file" id="importFile" accept="application/json" style="display:none;">
+        <button class="btn btn-danger btn-block btn-sm" id="wipeBtn" style="margin-top:12px;">清空全部数据</button>
+      </div>
+      <div class="card plain hint">共 <b id="statMat">0</b> 种材料 · <b id="statRec">0</b> 个配方</div>
+    </div>
+  </section>
+</div>
+
+<nav class="bottom">
+  <button data-tab="mix" class="active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg>调酒</button>
+  <button data-tab="mat">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7h18M3 12h18M3 17h18"/></svg>材料库</button>
+  <button data-tab="rec">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>配方</button>
+  <button data-tab="bak">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M12 7v5l3 2"/></svg>备份</button>
+</nav>
+
+<!-- add material modal -->
+<div class="mask" id="matModal">
+  <div class="modal">
+    <h3 id="matModalTitle">新增材料</h3>
+    <div class="field"><label>名称</label><input id="mName" placeholder="如 白朗姆酒"></div>
+    <div class="row2">
+      <div class="field"><label>类别</label>
+        <select id="mCat"><option value="基酒">基酒</option><option value="辅料">辅料</option><option value="其他">其他</option></select>
+      </div>
+      <div class="field"><label>酒精度 %</label><input id="mAbv" type="number" min="0" max="100" step="0.1" placeholder="如 40"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>总价 ¥</label><input id="mPrice" type="number" min="0" step="0.01" placeholder="如 68"></div>
+      <div class="field"><label>总体积 ml</label><input id="mVol" type="number" min="0" step="1" placeholder="如 700"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="matCancel">取消</button>
+      <button class="btn btn-primary" id="matSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- add to mix modal -->
+<div class="mask" id="pickModal">
+  <div class="modal">
+    <h3>选择材料</h3>
+    <div class="field" style="margin-bottom:10px;"><label>搜索材料名称</label><input id="pickSearch" placeholder="输入名称筛选，如 朗姆" style="margin-bottom:0;"></div>
+    <div id="pickList" style="max-height:46vh;overflow:auto;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="pickCancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- save recipe modal -->
+<div class="mask" id="recModal">
+  <div class="modal">
+    <h3>保存配方</h3>
+    <div class="field"><label>配方名称</label><input id="recName" placeholder="如 桃味朗姆"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="recCancel">取消</button>
+      <button class="btn btn-primary" id="recSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  var PREFIX="wb_cocktail_";
+  var K_MAT=PREFIX+"materials", K_REC=PREFIX+"recipes", K_SEED=PREFIX+"seeded";
+  function load(k,def){try{var v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;}}
+  function save(k,v){localStorage.setItem(k,JSON.stringify(v));flashSaved();scheduleGhPush();}
+  var materials=load(K_MAT,[]), recipes=load(K_REC,[]);
+  function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+  // seed
+  if(!localStorage.getItem(K_SEED)){
+    materials=[
+      {id:uid(),name:"白朗姆酒",cat:"基酒",abv:40,price:68,vol:700},
+      {id:uid(),name:"蓝橙力娇酒",cat:"基酒",abv:20,price:55,vol:500},
+      {id:uid(),name:"桃汁",cat:"辅料",abv:0,price:12,vol:1000},
+      {id:uid(),name:"鲜柠檬汁",cat:"辅料",abv:0,price:8,vol:200},
+      {id:uid(),name:"糖浆",cat:"辅料",abv:0,price:15,vol:250}
+    ];
+    save(K_MAT,materials);
+    localStorage.setItem(K_SEED,"1");
+  }
+
+  // mix state: [{matId, vol}]
+  var mix=[];
+
+  function $(id){return document.getElementById(id);}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
+  function money(n){return "¥"+(Math.round(n*100)/100).toFixed(2);}
+  function catIcon(c){
+    if(c==="基酒")return '<path d="M5 4h14l-7 8z"/><path d="M12 12v6"/>';
+    if(c==="辅料")return '<path d="M12 3c4 4 6 7 6 10a6 6 0 0 1-12 0c0-3 2-6 6-10z"/>';
+    return '<rect x="4" y="4" width="16" height="16" rx="3"/>';
+  }
+  var toastT;
+  function toast(msg){var t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove("show");},1600);}
+  function flashSaved(){var d=$("saveDot");if(d){d.style.background="#B9F6CA";}}
+
+  function matById(id){for(var i=0;i<materials.length;i++)if(materials[i].id===id)return materials[i];return null;}
+
+  // ---- render materials ----
+  function renderMaterials(){
+    var box=$("matList");box.innerHTML="";
+    if(!materials.length){box.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="3"/></svg><div>材料库还是空的，点右上角「新增」</div></div>';return;}
+    materials.forEach(function(m){
+      var unit=(m.vol>0)?(m.price/m.vol):0;
+      var row=document.createElement("div");row.className="mat-row";
+      row.innerHTML='<div class="mat-ic cat-'+m.cat+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+catIcon(m.cat)+'</svg></div>'+
+        '<div class="mat-info"><div class="nm">'+esc(m.name)+'</div><div class="sub">'+(m.cat==="基酒"?("酒精度 "+m.abv+"% · "):"")+m.vol+'ml / '+money(m.price)+' · 单价 <b>'+money(unit)+'/ml</b></div></div>'+
+        '<button class="icon-btn" data-edit="'+m.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>'+
+        '<button class="icon-btn del" data-del="'+m.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>';
+      box.appendChild(row);
+    });
+    box.querySelectorAll("[data-edit]").forEach(function(b){b.onclick=function(){openMatModal(b.getAttribute("data-edit"));};});
+    box.querySelectorAll("[data-del]").forEach(function(b){b.onclick=function(){delMat(b.getAttribute("data-del"));};});
+  }
+  function delMat(id){
+    if(!confirm("确定删除该材料？"))return;
+    materials=materials.filter(function(m){return m.id!==id;});
+    mix=mix.filter(function(x){return x.matId!==id;});
+    save(K_MAT,materials);renderMaterials();renderMix();
+  }
+
+  // ---- material modal ----
+  var editId=null;
+  function openMatModal(id){
+    editId=id||null;$("matModalTitle").textContent=id?"编辑材料":"新增材料";
+    if(id){var m=matById(id);$("mName").value=m.name;$("mCat").value=m.cat;$("mAbv").value=m.abv;$("mPrice").value=m.price;$("mVol").value=m.vol;}
+    else{$("mName").value="";$("mCat").value="基酒";$("mAbv").value="";$("mPrice").value="";$("mVol").value="";}
+    $("matModal").classList.add("show");
+  }
+  $("matSave").onclick=function(){
+    var name=$("mName").value.trim(),cat=$("mCat").value,
+        abv=parseFloat($("mAbv").value)||0,price=parseFloat($("mPrice").value)||0,vol=parseFloat($("mVol").value)||0;
+    if(!name){toast("请填写名称");return;}
+    if(vol<=0){toast("总体积需大于0");return;}
+    if(abv<0||abv>100){toast("酒精度 0~100");return;}
+    if(editId){var m=matById(editId);m.name=name;m.cat=cat;m.abv=abv;m.price=price;m.vol=vol;}
+    else{materials.push({id:uid(),name:name,cat:cat,abv:abv,price:price,vol:vol});}
+    save(K_MAT,materials);$("matModal").classList.remove("show");renderMaterials();renderMix();toast("已保存");
+  };
+  $("matCancel").onclick=function(){$("matModal").classList.remove("show");};
+
+  // ---- mix ----
+  function renderMix(){
+    var box=$("mixList"),empty=$("mixEmpty");
+    box.innerHTML="";
+    if(!mix.length){empty.style.display="block";}
+    else{empty.style.display="none";}
+    var totalVol=0,totalCost=0,alcohol=0;
+    mix.forEach(function(x){
+      var m=matById(x.matId);if(!m)return;
+      var unit=(m.vol>0)?(m.price/m.vol):0;
+      var cost=x.vol*unit, alc=x.vol*(m.abv/100);
+      totalVol+=x.vol;totalCost+=cost;alcohol+=alc;
+      var row=document.createElement("div");row.className="mix-row";
+      row.innerHTML='<div class="mix-name">'+esc(m.name)+'<small>'+(m.cat==="基酒"?(m.abv+"% · "):"")+money(unit)+'/ml</small></div>'+
+        '<div class="mix-vol"><input type="number" min="0" step="1" value="'+x.vol+'" data-vol="'+x.matId+'"><span class="u">ml</span></div>'+
+        '<div class="mix-cost">'+money(cost)+'</div>'+
+        '<button class="icon-btn del" data-rm="'+x.matId+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>';
+      box.appendChild(row);
+    });
+    box.querySelectorAll("[data-vol]").forEach(function(inp){inp.oninput=function(){var v=parseFloat(inp.value)||0;setVol(inp.getAttribute("data-vol"),v);};});
+    box.querySelectorAll("[data-rm]").forEach(function(b){b.onclick=function(){mix=mix.filter(function(x){return x.matId!==b.getAttribute("data-rm");});renderMix();};});
+    var abv=totalVol>0?(alcohol/totalVol*100):0;
+    $("rPrice").textContent=money(totalCost);
+    $("rAbv").innerHTML=abv.toFixed(1)+'<small>%</small>';
+    $("rVol").innerHTML=Math.round(totalVol)+'<small>ml</small>';
+    $("rWarn").classList.toggle("show",abv>=20);
+    renderQuick();
+  }
+  function setVol(id,v){for(var i=0;i<mix.length;i++)if(mix[i].matId===id){mix[i].vol=v;break;}renderMix();}
+
+  function renderPickList(){
+    var q=($("pickSearch").value||"").trim().toLowerCase();
+    var list=$("pickList");list.innerHTML="";
+    var shown=materials.filter(function(m){return m.name.toLowerCase().indexOf(q)>=0;});
+    if(!shown.length){list.innerHTML='<div class="empty">没有匹配的材料</div>';return;}
+    shown.forEach(function(m){
+      var unit=(m.vol>0)?(m.price/m.vol):0;
+      var row=document.createElement("div");row.className="mat-row";row.style.cursor="pointer";
+      row.innerHTML='<div class="mat-ic cat-'+m.cat+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+catIcon(m.cat)+'</svg></div>'+
+        '<div class="mat-info"><div class="nm">'+esc(m.name)+'</div><div class="sub">'+(m.cat==="基酒"?(m.abv+"% · "):"")+money(unit)+'/ml</div></div>'+
+        '<svg viewBox="0 0 24 24" fill="none" stroke="#FF6B6B" stroke-width="2" stroke-linecap="round" style="width:20px;height:20px;"><path d="M12 5v14M5 12h14"/></svg>';
+      row.onclick=function(){
+        if(!mix.some(function(x){return x.matId===m.id;}))mix.push({matId:m.id,vol:Math.round((m.cat==="基酒"?45:50))});
+        $("pickModal").classList.remove("show");renderMix();
+      };
+      list.appendChild(row);
+    });
+  }
+  $("pickSearch").oninput=function(){renderPickList();};
+  $("addMixBtn").onclick=function(){
+    if(!materials.length){toast("请先到材料库添加材料");return;}
+    $("pickSearch").value="";renderPickList();
+    $("pickModal").classList.add("show");
+  };
+  $("pickCancel").onclick=function(){$("pickModal").classList.remove("show");};
+
+  $("scaleBtn").onclick=function(){
+    var target=parseFloat($("targetVol").value)||0;
+    if(target<=0){toast("请输入目标体积");return;}
+    var cur=mix.reduce(function(s,x){return s+x.vol;},0);
+    if(cur<=0){toast("请先添加材料");return;}
+    var f=target/cur;
+    mix.forEach(function(x){x.vol=Math.max(1,Math.round(x.vol*f));});
+    renderMix();toast("已缩放到 "+Math.round(target)+"ml");
+  };
+  $("clearMixBtn").onclick=function(){mix=[];renderMix();};
+
+  // ---- recipes ----
+  function renderRecipes(){
+    var box=$("recList");box.innerHTML="";
+    if(!recipes.length){box.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg><div>还没有保存的配方</div></div>';return;}
+    recipes.slice().reverse().forEach(function(r){
+      var row=document.createElement("div");row.className="recipe-card";
+      row.innerHTML='<div class="recipe-info"><div class="nm">'+esc(r.name)+'</div><div class="sub">'+r.totalVol+'ml · <b>'+money(r.totalCost)+'</b> · 酒精度 '+r.abv.toFixed(1)+'%</div></div>'+
+        '<button class="btn btn-ghost btn-sm" data-load="'+r.id+'">调入</button>'+
+        '<button class="icon-btn del" data-rdel="'+r.id+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>';
+      box.appendChild(row);
+    });
+    box.querySelectorAll("[data-load]").forEach(function(b){b.onclick=function(){loadRecipe(b.getAttribute("data-load"));};});
+    box.querySelectorAll("[data-rdel]").forEach(function(b){b.onclick=function(){if(confirm("删除该配方？")){recipes=recipes.filter(function(r){return r.id!==b.getAttribute("data-rdel");});save(K_REC,recipes);renderRecipes();}};});
+  }
+  function computeMix(){
+    var totalVol=0,totalCost=0,alcohol=0;
+    mix.forEach(function(x){var m=matById(x.matId);if(!m)return;var unit=(m.vol>0)?(m.price/m.vol):0;totalVol+=x.vol;totalCost+=x.vol*unit;alcohol+=x.vol*(m.abv/100);});
+    return {totalVol:totalVol,totalCost:totalCost,abv:totalVol>0?alcohol/totalVol*100:0};
+  }
+  $("saveRecipeBtn").onclick=function(){
+    if(!mix.length){toast("先添加材料再保存");return;}
+    var c=computeMix();if(c.totalVol<=0){toast("用量不能为0");return;}
+    $("recModal").classList.add("show");$("recName").value="";
+  };
+  $("recSave").onclick=function(){
+    var name=$("recName").value.trim()||("配方"+recipes.length+1);
+    var c=computeMix();
+    recipes.push({id:uid(),name:name,items:mix.map(function(x){return {matId:x.matId,vol:x.vol};}),totalVol:Math.round(c.totalVol),totalCost:c.totalCost,abv:c.abv,ts:Date.now()});
+    save(K_REC,recipes);$("recModal").classList.remove("show");renderRecipes();toast("配方已保存");
+  };
+  $("recCancel").onclick=function(){$("recModal").classList.remove("show");};
+  function loadRecipe(id){
+    var r=null;for(var i=0;i<recipes.length;i++)if(recipes[i].id===id)r=recipes[i];
+    if(!r)return;
+    mix=r.items.filter(function(it){return matById(it.matId);}).map(function(it){return {matId:it.matId,vol:it.vol};});
+    renderMix();switchTab("mix");toast("已调入「"+r.name+"」");
+  }
+
+  // ---- quick chips (recent recipes) ----
+  function renderQuick(){
+    var box=$("quickChips");box.innerHTML="";
+    if(!recipes.length){box.innerHTML='<div class="hint">保存配方后会出现在这里，一键调入</div>';return;}
+    recipes.slice(-4).reverse().forEach(function(r){
+      var c=document.createElement("div");c.className="chip";
+      c.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 4h14l-7 8z"/><path d="M12 12v6"/></svg>'+esc(r.name);
+      c.onclick=function(){loadRecipe(r.id);};
+      box.appendChild(c);
+    });
+  }
+
+  // ---- backup ----
+  $("exportBtn").onclick=function(){
+    var data={materials:materials,recipes:recipes,exportedAt:new Date().toISOString()};
+    var blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+    var a=document.createElement("a");a.href=URL.createObjectURL(blob);
+    a.download="调酒计算器备份_"+new Date().toISOString().slice(0,10)+".json";a.click();
+    toast("已导出");
+  };
+  $("importBtn").onclick=function(){$("importFile").click();};
+  $("importFile").onchange=function(e){
+    var f=e.target.files[0];if(!f)return;
+    var rd=new FileReader();rd.onload=function(){
+      try{var d=JSON.parse(rd.result);
+        if(Array.isArray(d.materials)){materials=materials.concat(d.materials.filter(function(m){return m&&m.name&&m.vol>0;}));}
+        if(Array.isArray(d.recipes)){recipes=recipes.concat(d.recipes.filter(function(r){return r&&r.name;}));}
+        save(K_MAT,materials);save(K_REC,recipes);renderAll();
+        toast("已导入 "+d.materials.length+" 材料 / "+d.recipes.length+" 配方");
+      }catch(err){toast("文件格式错误");}
+    };rd.readAsText(f);e.target.value="";
+  };
+  $("wipeBtn").onclick=function(){
+    if(!confirm("确定清空全部材料和配方？此操作不可恢复！"))return;
+    materials=[];recipes=[];mix=[];localStorage.removeItem(K_SEED);
+    save(K_MAT,materials);save(K_REC,recipes);renderAll();toast("已清空");
+  };
+  $("clearSeedBtn").onclick=function(){
+    if(!confirm("清空示例数据？将删除材料库全部材料（不影响已保存配方里的快照）。"))return;
+    materials=[];localStorage.removeItem(K_SEED);
+    save(K_MAT,materials);renderMaterials();renderMix();toast("已清空示例");
+  };
+
+  // ---- github sync ----
+  var GH_K=PREFIX+"gh";
+  function ghCfg(){try{return JSON.parse(localStorage.getItem(GH_K))||{};}catch(e){return {};}}
+  function ghSetCfg(c){localStorage.setItem(GH_K,JSON.stringify(c));updateGhStatus();}
+  function ghHdr(c){return {"Authorization":"Bearer "+(c.token||""),"Content-Type":"application/json","Accept":"application/vnd.github+json","Cache-Control":"no-cache"};}
+  function ghUrl(c){return "https://api.github.com/repos/"+encodeURIComponent(c.repo)+"/contents/"+encodeURIComponent(c.path)+"?ref="+encodeURIComponent(c.branch);}
+  function b64e(s){return btoa(unescape(encodeURIComponent(s))).replace(/\n/g,"");}
+  function b64d(b){return decodeURIComponent(escape(atob(b.replace(/\n/g,""))));}
+  function updateGhStatus(){
+    var c=ghCfg(),el=$("ghStatus");
+    if(c&&c.token&&c.repo){el.innerHTML='<span class="save-dot" style="background:#34D399;box-shadow:0 0 6px #34D399;"></span>已连接';el.style.color="#0F9D58";el.style.background="#E7F7EE";}
+    else{el.innerHTML='<span class="save-dot" style="background:#bbb;"></span>未配置';el.style.color="#888";el.style.background="#eee";}
+  }
+  function fillGhForm(){var c=ghCfg();if(c.token)$("ghToken").value=c.token;if(c.repo)$("ghRepo").value=c.repo;if(c.branch)$("ghBranch").value=c.branch||"main";if(c.path)$("ghPath").value=c.path||"cocktail-data.json";}
+  var ghTimer;
+  function scheduleGhPush(){clearTimeout(ghTimer);ghTimer=setTimeout(function(){ghPush();},800);}
+  async function ghPush(){
+    var c=ghCfg();if(!c.token||!c.repo)return;
+    var body=JSON.stringify({materials:materials,recipes:recipes});
+    var b64=b64e(body),sha=null;
+    try{var r=await fetch(ghUrl(c),{headers:ghHdr(c)});if(r.ok){var j=await r.json();sha=j.sha;}else if(r.status!==404){toast("读取远端失败:"+r.status);return;}}catch(e){}
+    var put={message:"cocktail sync "+new Date().toISOString(),content:b64,branch:c.branch};
+    if(sha)put.sha=sha;
+    try{
+      var res=await fetch(ghUrl(c),{method:"PUT",headers:ghHdr(c),body:JSON.stringify(put)});
+      if(res.ok){toast("已同步到 GitHub");updateGhStatus();}
+      else{var e=await res.json().catch(function(){return{};});toast("同步失败:"+(e.message||res.status));}
+    }catch(e){toast("网络异常，稍后重试");}
+  }
+  async function ghPull(){
+    var c=ghCfg();if(!c.token||!c.repo){toast("先配置 GitHub 同步");return;}
+    try{
+      var r=await fetch(ghUrl(c),{headers:ghHdr(c)});
+      if(r.status===404){toast("远端暂无数据");return;}
+      if(!r.ok){toast("拉取失败:"+r.status);return;}
+      var j=await r.json(),data=JSON.parse(b64d(j.content));
+      if(Array.isArray(data.materials))materials=data.materials;
+      if(Array.isArray(data.recipes))recipes=data.recipes;
+      save(K_MAT,materials);save(K_REC,recipes);renderAll();toast("已从 GitHub 拉取");
+    }catch(e){toast("拉取解析失败");}
+  }
+  $("ghSave").onclick=function(){
+    var c={token:$("ghToken").value.trim(),repo:$("ghRepo").value.trim(),branch:$("ghBranch").value.trim()||"main",path:$("ghPath").value.trim()||"cocktail-data.json"};
+    if(!c.token||!c.repo){toast("请填 Token 和仓库");return;}
+    ghSetCfg(c);toast("设置已保存，正在拉取…");ghPull();
+  };
+  $("ghPush").onclick=function(){ghPush();};
+  $("ghPull").onclick=function(){ghPull();};
+  $("ghDisconnect").onclick=function(){if(confirm("断开 GitHub 同步？本地数据保留。")){localStorage.removeItem(GH_K);fillGhForm();updateGhStatus();toast("已断开");}};
+  $("ghNew").onclick=async function(){
+    var c=ghCfg();if(!c.token){toast("先填 Token");return;}
+    var name=(c.repo.split("/")[1])||"cocktail-data";
+    try{var r=await fetch("https://api.github.com/user/repos",{method:"POST",headers:ghHdr(c),body:JSON.stringify({name:name,private:true,auto_init:true})});
+      if(r.ok){toast("仓库已创建: "+name);}else{var e=await r.json().catch(function(){return{};});toast("创建失败:"+(e.message||r.status));}}catch(e){toast("网络异常");}
+  };
+
+  // ---- tabs ----
+  function switchTab(t){
+    document.querySelectorAll("nav.bottom button").forEach(function(b){b.classList.toggle("active",b.getAttribute("data-tab")===t);});
+    document.querySelectorAll(".tab").forEach(function(s){s.classList.toggle("active",s.id==="tab-"+t);});
+  }
+  document.querySelectorAll("nav.bottom button").forEach(function(b){b.onclick=function(){switchTab(b.getAttribute("data-tab"));};});
+  $("addMatBtn").onclick=function(){openMatModal(null);};
+
+  // close modal on mask click
+  document.querySelectorAll(".mask").forEach(function(m){m.onclick=function(e){if(e.target===m)m.classList.remove("show");};});
+
+  // render stats
+  function renderStats(){$("statMat").textContent=materials.length;$("statRec").textContent=recipes.length;}
+
+  function renderAll(){renderMaterials();renderMix();renderRecipes();renderQuick();renderStats();}
+  fillGhForm();updateGhStatus();renderAll();
+  (function(){var c=ghCfg();if(c.token&&c.repo){ghPull();}})();
+})();
+</script>
+</body>
+</html>
