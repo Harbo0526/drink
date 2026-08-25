@@ -236,14 +236,14 @@
       <div class="card">
         <div class="sec-title" style="margin-top:0;"><h2>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 2 2 6.5 2 12c0 4.4 2.9 8.2 6.8 9.5.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5C19.1 20.2 22 16.4 22 12c0-5.5-4.5-10-10-10z"/></svg>
-          GitHub 云同步</h2>
+          Gitee 云同步</h2>
           <span class="save-tag" id="ghStatus" style="background:#eee;color:#888;"><span class="save-dot" style="background:#bbb;"></span>未配置</span>
         </div>
-        <p class="hint" style="margin-top:0;">把数据存到你自己的 GitHub 仓库，手机/电脑多设备自动同步。需一个带 <b>repo</b> 权限的私人令牌（仅存你浏览器本地，不上传给我）。</p>
-        <div class="field"><label>私人令牌 Token</label><input id="ghToken" type="password" placeholder="ghp_xxx 或 github_pat_xxx" style="font-size:14px;"></div>
+        <p class="hint" style="margin-top:0;">把数据存到你自己的 Gitee（码云）仓库，国内手机直连、多设备自动同步。需一个带 <b>projects</b> 权限的私人令牌（仅存你浏览器本地，不上传给我）。</p>
+        <div class="field"><label>私人令牌 Token</label><input id="ghToken" type="password" placeholder="gitee 私人令牌" style="font-size:14px;"></div>
         <div class="row2">
-          <div class="field"><label>仓库 owner/repo</label><input id="ghRepo" value="Harbo0526/drink" placeholder="Harbo0526/drink"></div>
-          <div class="field"><label>分支</label><input id="ghBranch" value="main"></div>
+          <div class="field"><label>仓库 owner/repo</label><input id="ghRepo" placeholder="你的Gitee用户名/仓库名"></div>
+          <div class="field"><label>分支</label><input id="ghBranch" value="master"></div>
         </div>
         <div class="field"><label>文件路径</label><input id="ghPath" value="cocktail-data.json"></div>
         <div class="backup-actions">
@@ -560,12 +560,12 @@
     save(K_MAT,materials);renderMaterials();renderMix();toast("已清空示例");
   };
 
-  // ---- github sync ----
+  // ---- gitee sync ----
   var GH_K=PREFIX+"gh";
   function ghCfg(){try{return JSON.parse(localStorage.getItem(GH_K))||{};}catch(e){return {};}}
   function ghSetCfg(c){localStorage.setItem(GH_K,JSON.stringify(c));updateGhStatus();}
-  function ghHdr(c){return {"Authorization":"Bearer "+(c.token||""),"Content-Type":"application/json","Accept":"application/vnd.github+json","Cache-Control":"no-cache"};}
-  function ghUrl(c){return "https://api.github.com/repos/"+encodeURIComponent(c.repo)+"/contents/"+encodeURIComponent(c.path)+"?ref="+encodeURIComponent(c.branch);}
+  function ghHdr(c){return {"Content-Type":"application/json"};}
+  function ghUrl(c){return "https://gitee.com/api/v5/repos/"+encodeURIComponent(c.repo)+"/contents/"+encodeURIComponent(c.path)+"?ref="+encodeURIComponent(c.branch)+"&access_token="+encodeURIComponent(c.token);}
   function b64e(s){return btoa(unescape(encodeURIComponent(s))).replace(/\n/g,"");}
   function b64d(b){return decodeURIComponent(escape(atob(b.replace(/\n/g,""))));}
   function updateGhStatus(){
@@ -573,7 +573,7 @@
     if(c&&c.token&&c.repo){el.innerHTML='<span class="save-dot" style="background:#34D399;box-shadow:0 0 6px #34D399;"></span>已连接';el.style.color="#0F9D58";el.style.background="#E7F7EE";}
     else{el.innerHTML='<span class="save-dot" style="background:#bbb;"></span>未配置';el.style.color="#888";el.style.background="#eee";}
   }
-  function fillGhForm(){var c=ghCfg();if(c.token)$("ghToken").value=c.token;if(c.repo)$("ghRepo").value=c.repo;if(c.branch)$("ghBranch").value=c.branch||"main";if(c.path)$("ghPath").value=c.path||"cocktail-data.json";}
+  function fillGhForm(){var c=ghCfg();if(c.token)$("ghToken").value=c.token;if(c.repo)$("ghRepo").value=c.repo;if(c.branch)$("ghBranch").value=c.branch||"master";if(c.path)$("ghPath").value=c.path||"cocktail-data.json";}
   var ghTimer;
   function scheduleGhPush(){clearTimeout(ghTimer);ghTimer=setTimeout(function(){ghPush();},800);}
   async function ghPush(){
@@ -584,13 +584,13 @@
     var put={message:"cocktail sync "+new Date().toISOString(),content:b64,branch:c.branch};
     if(sha)put.sha=sha;
     try{
-      var res=await fetch(ghUrl(c),{method:"PUT",headers:ghHdr(c),body:JSON.stringify(put)});
-      if(res.ok){toast("已同步到 GitHub");updateGhStatus();}
+      var res=await fetch(ghUrl(c),{method:"POST",headers:ghHdr(c),body:JSON.stringify(put)});
+      if(res.ok){toast("已同步到 Gitee");updateGhStatus();}
       else{var e=await res.json().catch(function(){return{};});toast("同步失败:"+(e.message||res.status));}
     }catch(e){toast("网络异常，稍后重试");}
   }
   async function ghPull(){
-    var c=ghCfg();if(!c.token||!c.repo){toast("先配置 GitHub 同步");return;}
+    var c=ghCfg();if(!c.token||!c.repo){toast("先配置 Gitee 同步");return;}
     try{
       var r=await fetch(ghUrl(c),{headers:ghHdr(c)});
       if(r.status===404){toast("远端暂无数据");return;}
@@ -598,21 +598,21 @@
       var j=await r.json(),data=JSON.parse(b64d(j.content));
       if(Array.isArray(data.materials))materials=data.materials;
       if(Array.isArray(data.recipes))recipes=data.recipes;
-      save(K_MAT,materials);save(K_REC,recipes);renderAll();toast("已从 GitHub 拉取");
+      save(K_MAT,materials);save(K_REC,recipes);renderAll();toast("已从 Gitee 拉取");
     }catch(e){toast("拉取解析失败");}
   }
   $("ghSave").onclick=function(){
-    var c={token:$("ghToken").value.trim(),repo:$("ghRepo").value.trim(),branch:$("ghBranch").value.trim()||"main",path:$("ghPath").value.trim()||"cocktail-data.json"};
+    var c={token:$("ghToken").value.trim(),repo:$("ghRepo").value.trim(),branch:$("ghBranch").value.trim()||"master",path:$("ghPath").value.trim()||"cocktail-data.json"};
     if(!c.token||!c.repo){toast("请填 Token 和仓库");return;}
     ghSetCfg(c);toast("设置已保存，正在拉取…");ghPull();
   };
   $("ghPush").onclick=function(){ghPush();};
   $("ghPull").onclick=function(){ghPull();};
-  $("ghDisconnect").onclick=function(){if(confirm("断开 GitHub 同步？本地数据保留。")){localStorage.removeItem(GH_K);fillGhForm();updateGhStatus();toast("已断开");}};
+  $("ghDisconnect").onclick=function(){if(confirm("断开 Gitee 同步？本地数据保留。")){localStorage.removeItem(GH_K);fillGhForm();updateGhStatus();toast("已断开");}};
   $("ghNew").onclick=async function(){
     var c=ghCfg();if(!c.token){toast("先填 Token");return;}
     var name=(c.repo.split("/")[1])||"cocktail-data";
-    try{var r=await fetch("https://api.github.com/user/repos",{method:"POST",headers:ghHdr(c),body:JSON.stringify({name:name,private:true,auto_init:true})});
+    try{var r=await fetch("https://gitee.com/api/v5/user/repos?access_token="+encodeURIComponent(c.token),{method:"POST",headers:ghHdr(c),body:JSON.stringify({name:name,private:true,auto_init:true})});
       if(r.ok){toast("仓库已创建: "+name);}else{var e=await r.json().catch(function(){return{};});toast("创建失败:"+(e.message||r.status));}}catch(e){toast("网络异常");}
   };
 
