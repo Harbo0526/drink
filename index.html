@@ -575,7 +575,7 @@
     if(c&&c.token&&c.repo){el.innerHTML='<span class="save-dot" style="background:#34D399;box-shadow:0 0 6px #34D399;"></span>已连接';el.style.color="#0F9D58";el.style.background="#E7F7EE";}
     else{el.innerHTML='<span class="save-dot" style="background:#bbb;"></span>未配置';el.style.color="#888";el.style.background="#eee";}
   }
-  function fillGhForm(){var c=ghCfg();if(c.token)$("ghToken").value=c.token;if(c.repo)$("ghRepo").value=c.repo;if(c.branch)$("ghBranch").value=c.branch||"master";if(c.path)$("ghPath").value=c.path||"cocktail-data.json";}
+  function fillGhForm(){var c=ghCfg();if(c.token)$("ghToken").value=c.token;$("ghRepo").value="harboh/cocktail";if(c.branch)$("ghBranch").value=c.branch;else $("ghBranch").value="master";if(c.path)$("ghPath").value=c.path;else $("ghPath").value="cocktail-data.json";if(c.token)ghSetCfg({token:c.token,repo:"harboh/cocktail",branch:(c.branch)||"master",path:(c.path)||"cocktail-data.json"});}
   var ghTimer;
   function scheduleGhPush(){clearTimeout(ghTimer);ghTimer=setTimeout(function(){ghPush();},800);}
   async function ghPush(){
