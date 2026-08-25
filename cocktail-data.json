@@ -1,0 +1,1 @@
+{"materials":[{"id":"m1","name":"白朗姆酒","cat":"基酒","abv":40,"price":68,"vol":700},{"id":"m2","name":"蓝橙力娇酒","cat":"基酒","abv":20,"price":55,"vol":500},{"id":"m3","name":"桃汁","cat":"辅料","abv":0,"price":12,"vol":1000},{"id":"m4","name":"鲜柠檬汁","cat":"辅料","abv":0,"price":8,"vol":200},{"id":"m5","name":"糖浆","cat":"辅料","abv":0,"price":15,"vol":250}],"recipes":[]}
