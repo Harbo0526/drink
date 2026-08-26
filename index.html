@@ -241,7 +241,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 2 2 6.5 2 12c0 4.4 2.9 8.2 6.8 9.5.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5C19.1 20.2 22 16.4 22 12c0-5.5-4.5-10-10-10z"/></svg>
           Gitee 云同步</h2>
           <span class="save-tag" id="ghStatus" style="background:#eee;color:#888;"><span class="save-dot" style="background:#bbb;"></span>未配置</span>
-          <span class="save-tag" id="verTag" style="background:#fdf0e9;color:#d97706;margin-left:6px;">v4</span>
+          <span class="save-tag" id="verTag" style="background:#fdf0e9;color:#d97706;margin-left:6px;">v5</span>
         </div>
         <p class="hint" style="margin-top:0;">把数据存到你自己的 Gitee（码云）仓库，国内手机直连、多设备自动同步。需一个带 <b>projects</b> 权限的私人令牌（仅存你浏览器本地，不上传给我）。</p>
         <div class="field"><label>私人令牌 Token</label><input id="ghToken" type="password" placeholder="gitee 私人令牌" style="font-size:14px;"></div>
@@ -572,7 +572,8 @@
   function ghCfg(){try{return JSON.parse(localStorage.getItem(GH_K))||{};}catch(e){return {};}}
   function ghSetCfg(c){localStorage.setItem(GH_K,JSON.stringify(c));updateGhStatus();}
   function ghHdr(c){return {"Content-Type":"application/json"};}
-  function ghUrl(c){return "https://gitee.com/api/v5/repos/"+encodeURIComponent(c.repo)+"/contents/"+encodeURIComponent(c.path)+"?ref="+encodeURIComponent(c.branch)+"&access_token="+encodeURIComponent(c.token)+"&_t="+Date.now();}
+  function ghRepoEnc(repo){return encodeURIComponent(repo).replace(/%2F/gi,"/");}
+  function ghUrl(c){return "https://gitee.com/api/v5/repos/"+ghRepoEnc(c.repo)+"/contents/"+encodeURIComponent(c.path)+"?ref="+encodeURIComponent(c.branch)+"&access_token="+encodeURIComponent(c.token)+"&_t="+Date.now();}
   function b64e(s){return btoa(unescape(encodeURIComponent(s))).replace(/\n/g,"");}
   function b64d(b){return decodeURIComponent(escape(atob(b.replace(/\n/g,""))));}
   function updateGhStatus(){
@@ -625,7 +626,7 @@
       if(!u.ok){log("   响应: "+uText.slice(0,120));log("结论：令牌无效。请去 gitee.com → 设置 → 私人令牌，重新生成并勾选 projects 权限。");toast("令牌无效("+u.status+")");return;}
       var me=JSON.parse(uText);log("   当前登录用户: "+me.login+" (id="+me.id+")");
 
-      var repoUrl="https://gitee.com/api/v5/repos/"+encodeURIComponent(c.repo)+"?access_token="+encodeURIComponent(c.token)+"&_t="+Date.now();
+      var repoUrl="https://gitee.com/api/v5/repos/"+ghRepoEnc(c.repo)+"?access_token="+encodeURIComponent(c.token)+"&_t="+Date.now();
       log("2) 请求仓库: "+repoUrl.replace(c.token,"***"));
       var repoRes=await fetch(repoUrl,{headers:ghHdr(c)});
       var rText=await repoRes.text();log("   /repos 状态码: "+repoRes.status+" 长度: "+rText.length);
