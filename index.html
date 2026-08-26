@@ -241,7 +241,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 2 2 6.5 2 12c0 4.4 2.9 8.2 6.8 9.5.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5C19.1 20.2 22 16.4 22 12c0-5.5-4.5-10-10-10z"/></svg>
           Gitee 云同步</h2>
           <span class="save-tag" id="ghStatus" style="background:#eee;color:#888;"><span class="save-dot" style="background:#bbb;"></span>未配置</span>
-          <span class="save-tag" id="verTag" style="background:#fdf0e9;color:#d97706;margin-left:6px;">v5</span>
+          <span class="save-tag" id="verTag" style="background:#fdf0e9;color:#d97706;margin-left:6px;">v6</span>
         </div>
         <p class="hint" style="margin-top:0;">把数据存到你自己的 Gitee（码云）仓库，国内手机直连、多设备自动同步。需一个带 <b>projects</b> 权限的私人令牌（仅存你浏览器本地，不上传给我）。</p>
         <div class="field"><label>私人令牌 Token</label><input id="ghToken" type="password" placeholder="gitee 私人令牌" style="font-size:14px;"></div>
@@ -428,8 +428,7 @@
     mix.forEach(function(x){
       var m=matById(x.matId);if(!m)return;
       var unit=(m.vol>0)?(m.price/m.vol):0;
-      var cost=x.vol*unit, alc=x.vol*(m.abv/100);
-      totalVol+=x.vol;totalCost+=cost;alcohol+=alc;
+      var cost=x.vol*unit;
       var row=document.createElement("div");row.className="mix-row";
       row.innerHTML='<div class="mix-name">'+esc(m.name)+'<small>'+(m.cat==="基酒"?(m.abv+"% · "):"")+money(unit)+'/ml</small></div>'+
         '<div class="mix-vol"><input type="number" min="0" step="1" value="'+x.vol+'" data-vol="'+x.matId+'"><span class="u">ml</span></div>'+
@@ -437,8 +436,26 @@
         '<button class="icon-btn del" data-rm="'+x.matId+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>';
       box.appendChild(row);
     });
-    box.querySelectorAll("[data-vol]").forEach(function(inp){inp.oninput=function(){var v=parseFloat(inp.value)||0;setVol(inp.getAttribute("data-vol"),v);};});
+    box.querySelectorAll("[data-vol]").forEach(function(inp){
+      inp.oninput=function(){
+        var v=parseFloat(inp.value)||0;
+        var id=inp.getAttribute("data-vol");
+        for(var i=0;i<mix.length;i++)if(mix[i].matId===id){mix[i].vol=v;break;}
+        var row=inp.closest(".mix-row"),m=matById(id);
+        if(row&&m){var unit=(m.vol>0)?(m.price/m.vol):0;var c=row.querySelector(".mix-cost");if(c)c.textContent=money(v*unit);}
+        updateTotals();
+      };
+    });
     box.querySelectorAll("[data-rm]").forEach(function(b){b.onclick=function(){mix=mix.filter(function(x){return x.matId!==b.getAttribute("data-rm");});renderMix();};});
+    updateTotals();
+  }
+  function updateTotals(){
+    var totalVol=0,totalCost=0,alcohol=0;
+    mix.forEach(function(x){
+      var m=matById(x.matId);if(!m)return;
+      var unit=(m.vol>0)?(m.price/m.vol):0;
+      totalVol+=x.vol;totalCost+=x.vol*unit;alcohol+=x.vol*(m.abv/100);
+    });
     var abv=totalVol>0?(alcohol/totalVol*100):0;
     $("rPrice").textContent=money(totalCost);
     $("rAbv").innerHTML=abv.toFixed(1)+'<small>%</small>';
@@ -446,7 +463,7 @@
     $("rWarn").classList.toggle("show",abv>=20);
     renderQuick();
   }
-  function setVol(id,v){for(var i=0;i<mix.length;i++)if(mix[i].matId===id){mix[i].vol=v;break;}renderMix();}
+  function setVol(id,v){for(var i=0;i<mix.length;i++)if(mix[i].matId===id){mix[i].vol=v;break;}updateTotals();}
 
   function renderPickList(){
     var q=($("pickSearch").value||"").trim().toLowerCase();
