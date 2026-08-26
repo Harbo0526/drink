@@ -241,7 +241,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 2 2 6.5 2 12c0 4.4 2.9 8.2 6.8 9.5.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5C19.1 20.2 22 16.4 22 12c0-5.5-4.5-10-10-10z"/></svg>
           Gitee 云同步</h2>
           <span class="save-tag" id="ghStatus" style="background:#eee;color:#888;"><span class="save-dot" style="background:#bbb;"></span>未配置</span>
-          <span class="save-tag" id="verTag" style="background:#fdf0e9;color:#d97706;margin-left:6px;">v3</span>
+          <span class="save-tag" id="verTag" style="background:#fdf0e9;color:#d97706;margin-left:6px;">v4</span>
         </div>
         <p class="hint" style="margin-top:0;">把数据存到你自己的 Gitee（码云）仓库，国内手机直连、多设备自动同步。需一个带 <b>projects</b> 权限的私人令牌（仅存你浏览器本地，不上传给我）。</p>
         <div class="field"><label>私人令牌 Token</label><input id="ghToken" type="password" placeholder="gitee 私人令牌" style="font-size:14px;"></div>
@@ -616,6 +616,8 @@
     if(/^ghp_|^github_pat_/i.test(c.token)){toast("这是 GitHub 令牌，Gitee 不认识，请换成 Gitee 私人令牌");return;}
     var diag=$("ghDiag"),logs=[];diag.style.display="block";diag.textContent="正在测试…";
     function log(s){logs.push(s);diag.textContent=logs.join("\n");}
+    log("令牌指纹: "+c.token.slice(0,6)+"…"+c.token.slice(-4)+"  (长度 "+c.token.length+")");
+    log("仓库: "+c.repo+"  分支: "+c.branch);
     toast("正在测试连接…");
     try{
       var u=await fetch("https://gitee.com/api/v5/user?access_token="+encodeURIComponent(c.token)+"&_t="+Date.now(),{headers:ghHdr(c),cache:"no-store"});
@@ -630,10 +632,11 @@
       if(!repoRes.ok){log("   响应: "+rText.slice(0,200));}
       if(repoRes.status===404){
         log("结论：仓库 '"+c.repo+"' 不存在或 Token 无权限访问。");
-        log("自查：① 到 gitee.com 确认仓库存在且用户名/仓库名完全匹配（区分大小写）。");
-        log("自查：② 确认 Token 有 projects 权限；可尝试公开此仓库再测。");
-        log("自查：③ 把下面链接复制到手机浏览器地址栏直接打开，看能否返回 JSON：");
-        log(repoUrl.replace(c.token,"YOUR_TOKEN"));
+        log("排查①：请核对上面「令牌指纹」是否与本对话中的令牌一致（52c7a4…0d5898）。指纹不同=手机里存的不是这个令牌，请删掉重填。");
+        log("排查②：复制下面这行完整链接，粘贴到手机浏览器地址栏直接打开，看返回什么：");
+        log("https://gitee.com/api/v5/repos/harboh/cocktail?access_token="+c.token);
+        log("   - 返回 JSON（含 full_name）→ 令牌和网络都没问题，是页面 JS 的问题，刷新页面重试");
+        log("   - 返回 404 错误 JSON → 令牌确实无权访问，请确认令牌生成时选了该仓库或勾了 projects");
         toast("仓库不存在("+repoRes.status+")");return;
       }
       if(!repoRes.ok){toast("仓库检查失败:"+repoRes.status);log("结论：仓库检查失败，请按上面响应排查。");return;}
